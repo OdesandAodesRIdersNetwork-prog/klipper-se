@@ -149,7 +149,7 @@ class StrainGaugeZCal:
         # These are deliberately config-driven so V3 SE owners can
         # tune or disable the waveform trigger without editing source.
         self.prtouch_trigger = config.getboolean(
-            'prtouch_trigger', True)
+            'prtouch_trigger', False)
 
         self.prtouch_min_hold = config.getint(
             'prtouch_min_hold', 1000, minval=1)
