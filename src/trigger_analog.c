@@ -46,7 +46,9 @@ struct trigger_analog {
     uint32_t prtouch_min_hold;
     uint32_t prtouch_max_hold;
     int32_t prtouch_tare_counts;
+    uint8_t trigger_source;
     int32_t prtouch_buf[PRTOUCH_BUF_LEN];
+    uint32_t prtouch_ticks[PRTOUCH_BUF_LEN];
 };
 
 // Homing flags
@@ -112,15 +114,23 @@ prtouch_reset(struct trigger_analog *ta)
 {
     ta->prtouch_count = 0;
     ta->prtouch_index = 0;
-    for (uint8_t i = 0; i < PRTOUCH_BUF_LEN; i++)
+    ta->trigger_source = 0;
+
+    for (uint8_t i = 0; i < PRTOUCH_BUF_LEN; i++) {
         ta->prtouch_buf[i] = 0;
+        ta->prtouch_ticks[i] = 0;
+    }
 }
 
 static void
-prtouch_add_sample(struct trigger_analog *ta, int32_t value)
+prtouch_add_sample(
+    struct trigger_analog *ta, int32_t value, uint32_t ticks)
 {
     ta->prtouch_buf[ta->prtouch_index] = value;
-    ta->prtouch_index = (ta->prtouch_index + 1) % PRTOUCH_BUF_LEN;
+    ta->prtouch_ticks[ta->prtouch_index] = ticks;
+
+    ta->prtouch_index =
+        (ta->prtouch_index + 1) % PRTOUCH_BUF_LEN;
 
     if (ta->prtouch_count < PRTOUCH_BUF_LEN)
         ta->prtouch_count++;
@@ -344,9 +354,10 @@ trigger_analog_update(struct trigger_analog *ta, int32_t sample)
     // decision; the generic force trigger remains disabled.
     if (ta->prtouch_enabled) {
         int32_t prtouch_value = sample - ta->prtouch_tare_counts;
-        prtouch_add_sample(ta, prtouch_value);
+        prtouch_add_sample(ta, prtouch_value, time);
 
         if (prtouch_check_trigger(ta)) {
+            ta->trigger_source = 1;
             trsync_do_trigger(ta->ts, ta->trigger_reason);
             flags = 0;
             ta->homing_clock = time;
@@ -367,6 +378,7 @@ trigger_analog_update(struct trigger_analog *ta, int32_t sample)
     // Check if this is a "trigger"
     ret = check_trigger(ta, time, filtered_value);
     if (ret) {
+        ta->trigger_source = 2;
         trsync_do_trigger(ta->ts, ta->trigger_reason);
         flags = 0;
         ta->homing_clock = time;
@@ -465,12 +477,48 @@ DECL_COMMAND(command_trigger_analog_home,
              " error_reason=%c clock=%u monitor_ticks=%u monitor_max=%u");
 
 void
+command_trigger_analog_query_prtouch_sample(uint32_t *args)
+{
+    uint8_t oid = args[0];
+    uint8_t index = args[1];
+    struct trigger_analog *ta =
+        trigger_analog_oid_lookup(oid);
+
+    if (index >= PRTOUCH_BUF_LEN
+        || ta->prtouch_count < PRTOUCH_BUF_LEN) {
+        sendf("trigger_analog_prtouch_sample"
+              " oid=%c index=%c valid=%c sample=%i ticks=%u",
+              oid, index, 0, 0, 0);
+        return;
+    }
+
+    // index 0 = oldest, index 31 = triggering sample
+    uint8_t ring_index =
+        (ta->prtouch_index + index) % PRTOUCH_BUF_LEN;
+
+    sendf("trigger_analog_prtouch_sample"
+          " oid=%c index=%c valid=%c sample=%i ticks=%u",
+          oid, index, 1,
+          ta->prtouch_buf[ring_index],
+          ta->prtouch_ticks[ring_index]);
+}
+DECL_COMMAND(command_trigger_analog_query_prtouch_sample,
+             "trigger_analog_query_prtouch_sample"
+             " oid=%c index=%c");
+
+void
 command_trigger_analog_query_state(uint32_t *args)
 {
     uint8_t oid = args[0];
-    struct trigger_analog *ta = trigger_analog_oid_lookup(args[0]);
-    sendf("trigger_analog_state oid=%c homing=%c homing_clock=%u"
-          , oid, !!(ta->flags & TA_CAN_TRIGGER), ta->homing_clock);
+    struct trigger_analog *ta =
+        trigger_analog_oid_lookup(args[0]);
+
+    sendf("trigger_analog_state"
+          " oid=%c homing=%c homing_clock=%u trigger_source=%c",
+          oid,
+          !!(ta->flags & TA_CAN_TRIGGER),
+          ta->homing_clock,
+          ta->trigger_source);
 }
 DECL_COMMAND(command_trigger_analog_query_state
              , "trigger_analog_query_state oid=%c");

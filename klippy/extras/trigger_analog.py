@@ -292,6 +292,8 @@ class MCU_trigger_analog:
         self._prtouch_min_hold = 1000
         self._prtouch_max_hold = 1500
         self._last_prtouch_args = None
+        self._last_prtouch_snapshot = []
+        self._last_trigger_source = 0
 
         # Error codes from MCU
         self._error_map = {}
@@ -299,6 +301,7 @@ class MCU_trigger_analog:
         # Configure MCU objects
         self._oid = self._mcu.create_oid()
         self._home_cmd = self._query_state_cmd = None
+        self._query_prtouch_sample_cmd = None
         self._set_raw_range_cmd = self._set_trigger_cmd = None
         self._set_prtouch_cmd = None
         self._mcu.register_config_callback(self._build_config)
@@ -317,8 +320,17 @@ class MCU_trigger_analog:
         # Lookup commands
         self._query_state_cmd = self._mcu.lookup_query_command(
             "trigger_analog_query_state oid=%c",
-            "trigger_analog_state oid=%c homing=%c homing_clock=%u",
+            "trigger_analog_state oid=%c homing=%c homing_clock=%u"
+            " trigger_source=%c",
             oid=self._oid, cq=cmd_queue)
+
+        self._query_prtouch_sample_cmd = (
+            self._mcu.lookup_query_command(
+                "trigger_analog_query_prtouch_sample"
+                " oid=%c index=%c",
+                "trigger_analog_prtouch_sample"
+                " oid=%c index=%c valid=%c sample=%i ticks=%u",
+                oid=self._oid, cq=cmd_queue))
         self._set_raw_range_cmd = self._mcu.lookup_command(
             "trigger_analog_set_raw_range oid=%c raw_min=%i raw_max=%i",
             cq=cmd_queue)
@@ -351,6 +363,15 @@ class MCU_trigger_analog:
 
     def get_last_trigger_time(self):
         return self._last_trigger_time
+
+    def get_last_trigger_source(self):
+        return self._last_trigger_source
+
+    def get_last_prtouch_snapshot(self):
+        return list(self._last_prtouch_snapshot)
+
+    def get_prtouch_enabled(self):
+        return self._prtouch_enabled
 
     def set_trigger(self, trigger_type, trigger_value):
         self._trigger_type = trigger_type
@@ -402,10 +423,48 @@ class MCU_trigger_analog:
         self._sos_filter.reset_filter()
 
     def _clear_home(self):
-        self._home_cmd.send([self._oid, 0, 0, 0, 0, 0, 0, 0])
+        # Query and retrieve the exact frozen FIFO before MCU cleanup.
         params = self._query_state_cmd.send([self._oid])
-        trigger_ticks = self._mcu.clock32_to_clock64(params['homing_clock'])
-        return self._mcu.clock_to_print_time(trigger_ticks)
+
+        trigger_ticks = self._mcu.clock32_to_clock64(
+            params['homing_clock'])
+        trigger_time = self._mcu.clock_to_print_time(
+            trigger_ticks)
+
+        self._last_trigger_source = params['trigger_source']
+        self._last_prtouch_snapshot = []
+
+        try:
+            if self._last_trigger_source == 1:
+                snapshot = []
+
+                for index in range(32):
+                    sp = self._query_prtouch_sample_cmd.send(
+                        [self._oid, index])
+
+                    if not sp['valid']:
+                        break
+
+                    sample_ticks = (
+                        self._mcu.clock32_to_clock64(
+                            sp['ticks']))
+                    sample_time = (
+                        self._mcu.clock_to_print_time(
+                            sample_ticks))
+
+                    snapshot.append((
+                        sample_time,
+                        float(sp['sample']),
+                    ))
+
+                self._last_prtouch_snapshot = snapshot
+
+        finally:
+            # Cleanup may reset the MCU ring, so it happens last.
+            self._home_cmd.send(
+                [self._oid, 0, 0, 0, 0, 0, 0, 0])
+
+        return trigger_time
 
     def get_steppers(self):
         return self._dispatch.get_steppers()
@@ -413,6 +472,8 @@ class MCU_trigger_analog:
     def home_start(self, print_time, sample_time, sample_count, rest_time,
                    triggered=True):
         self._last_trigger_time = 0.
+        self._last_trigger_source = 0
+        self._last_prtouch_snapshot = []
         self._reset_filter()
         trigger_completion = self._dispatch.start(print_time)
         clock = self._mcu.print_time_to_clock(print_time)
