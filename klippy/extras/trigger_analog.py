@@ -285,6 +285,14 @@ class MCU_trigger_analog:
         self._trigger_type = "unspecified"
         self._trigger_value = 0.
         self._last_trigger_args = None
+
+        # Optional Creality V3 SE PRTouch trigger.
+        self._prtouch_enabled = False
+        self._prtouch_tare_counts = 0
+        self._prtouch_min_hold = 1000
+        self._prtouch_max_hold = 1500
+        self._last_prtouch_args = None
+
         # Error codes from MCU
         self._error_map = {}
         self._sensor_specific_error = 0
@@ -292,6 +300,7 @@ class MCU_trigger_analog:
         self._oid = self._mcu.create_oid()
         self._home_cmd = self._query_state_cmd = None
         self._set_raw_range_cmd = self._set_trigger_cmd = None
+        self._set_prtouch_cmd = None
         self._mcu.register_config_callback(self._build_config)
 
     def setup_sos_filter(self, sos_filter):
@@ -316,6 +325,9 @@ class MCU_trigger_analog:
         self._set_trigger_cmd = self._mcu.lookup_command(
             "trigger_analog_set_trigger oid=%c trigger_analog_type=%c"
             " trigger_value=%i", cq=cmd_queue)
+        self._set_prtouch_cmd = self._mcu.lookup_command(
+            "trigger_analog_set_prtouch oid=%c enabled=%c tare_counts=%i"
+            " min_hold=%u max_hold=%u", cq=cmd_queue)
         self._home_cmd = self._mcu.lookup_command(
             "trigger_analog_home oid=%c trsync_oid=%c trigger_reason=%c"
             " error_reason=%c clock=%u monitor_ticks=%u monitor_max=%u",
@@ -344,6 +356,21 @@ class MCU_trigger_analog:
         self._trigger_type = trigger_type
         self._trigger_value = trigger_value
 
+    def set_prtouch(self, enabled, min_hold=1000, max_hold=1500):
+        self._prtouch_enabled = bool(enabled)
+        self._prtouch_min_hold = int(min_hold)
+        self._prtouch_max_hold = int(max_hold)
+
+    def set_prtouch_tare(self, tare_counts):
+        self._prtouch_tare_counts = int(tare_counts)
+
+    def set_prtouch_thresholds(self, min_hold, max_hold):
+        self._prtouch_min_hold = int(min_hold)
+        self._prtouch_max_hold = int(max_hold)
+
+    def get_prtouch_thresholds(self):
+        return self._prtouch_min_hold, self._prtouch_max_hold
+
     def set_raw_range(self, raw_min, raw_max):
         self._raw_min = raw_min
         self._raw_max = raw_max
@@ -359,6 +386,18 @@ class MCU_trigger_analog:
         if args != self._last_trigger_args:
             self._set_trigger_cmd.send(args)
             self._last_trigger_args = args
+        # Update optional Creality PRTouch configuration.
+        args = [
+            self._oid,
+            int(self._prtouch_enabled),
+            self._prtouch_tare_counts,
+            self._prtouch_min_hold,
+            self._prtouch_max_hold,
+        ]
+        if args != self._last_prtouch_args:
+            self._set_prtouch_cmd.send(args)
+            self._last_prtouch_args = args
+
         # Update sos filter in mcu
         self._sos_filter.reset_filter()
 
