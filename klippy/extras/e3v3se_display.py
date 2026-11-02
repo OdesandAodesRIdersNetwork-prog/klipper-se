@@ -3072,31 +3072,31 @@ class E3v3seDisplay:
             self.color_background_black,
             50,
             155,
-            "Klipper " + self.pd.SHORT_BUILD_VERSION,
+            "Klipper-SE",
         )
 
-        # Contact details
+        # Project repository
         self.lcd.draw_icon(
             True, self.selected_language, self.icon_TEXT_contact, self.LBLX, 185
         )
         self.lcd.draw_icon(True, self.ICON, self.icon_Contact, 20, 200)
         self.lcd.draw_string(
             False,
-            self.lcd.font_8x8,
+            self.lcd.font_6x12,
             self.color_white,
             self.color_background_black,
-            50,
+            30,
             215,
-            "github.com/jpcurti/",
+            "github.com/OdesandAodes",
         )
         self.lcd.draw_string(
             False,
-            self.lcd.font_8x8,
+            self.lcd.font_6x12,
             self.color_white,
             self.color_background_black,
             30,
             230,
-            "ender3-v3-se-klipper-with-display",
+            "RIdersNetwork-prog/klipper-se",
         )
         self.Draw_Status_Area()
 
