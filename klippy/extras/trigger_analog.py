@@ -386,8 +386,11 @@ class MCU_trigger_analog:
         self._prtouch_tare_counts = int(tare_counts)
 
     def set_prtouch_thresholds(self, min_hold, max_hold):
+        if not self._prtouch_enabled:
+            return False
         self._prtouch_min_hold = int(min_hold)
         self._prtouch_max_hold = int(max_hold)
+        return True
 
     def get_prtouch_thresholds(self):
         return self._prtouch_min_hold, self._prtouch_max_hold

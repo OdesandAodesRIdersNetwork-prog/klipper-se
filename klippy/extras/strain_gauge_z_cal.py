@@ -946,18 +946,39 @@ class StrainGaugeZCal:
                     self.travel_speed)
                 toolhead.wait_moves()
 
-                probe_pos = probe.run_probe(gcmd)
+                probe_session = probe.start_probe_session(gcmd)
+                try:
+                    probe_session.run_probe(gcmd)
+                    probe_results = probe_session.pull_probed_results()
+                finally:
+                    probe_session.end_probe_session()
 
-                if probe_pos is None or len(probe_pos) < 3:
+                if not probe_results:
                     raise gcmd.error(
                         "CR Touch did not return a valid result at %s"
                         % point_label)
 
-                cr_touch_z = probe_pos[2]
+                probe_result = probe_results[0]
+
+                # Regular Klipper ProbeResult has two Z coordinate frames:
+                #   test_z = actual toolhead Z when the probe triggered
+                #   bed_z  = test_z - configured probe z_offset
+                #
+                # The recovered Creality/Kalico Z-compensation math uses
+                # the raw trigger/toolhead coordinate, so use test_z here.
+                cr_touch_bed_z = probe_result.bed_z
+                cr_touch_z = probe_result.test_z
 
                 gcmd.respond_info(
-                    "%s CR Touch median Z=%.5f"
-                    % (point_label, cr_touch_z))
+                    "%s CR Touch median trigger Z=%.5f\n"
+                    "  regular-Klipper bed_z=%.5f\n"
+                    "  configured probe z_offset=%.5f"
+                    % (
+                        point_label,
+                        cr_touch_z,
+                        cr_touch_bed_z,
+                        current_z_offset,
+                    ))
 
                 # Retract before moving the nozzle onto the same point.
                 curpos = toolhead.get_position()
