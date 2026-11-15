@@ -34,3 +34,30 @@ The payload does **not** include user-specific calibration copied from the devel
 No apt/pip provisioning, real source installation, runtime service enabling, privileged ownership/permissions deployment, production-grade symlink-race protection, first-boot assisted calibration, firmware flashing or fresh-CB1 physical 17-test acceptance. `install/install.sh --apply` must continue to exit 3. The packaging check must continue to return the expected exit 4 after its offline tests pass.
 
 Next, design a separate explicit blank-host-only provisioning sequence with an additional real-host admission and rollback protocol, then determine a safe supervised calibration acquisition path. Do not enable the real installer merely because the sandbox transaction passes.
+
+## 2026-11-15 hardening checkpoint: descriptor-anchored writes
+
+A follow-up safety change replaces path-based write and rollback operations inside
+`rehearse()` with directory-descriptor-anchored traversal. For each path component,
+the rehearsal now opens a directory using `O_DIRECTORY | O_NOFOLLOW` and creates
+new files through their open parent descriptor using `O_CREAT | O_EXCL | O_NOFOLLOW`.
+The root marker is reread through an opened root descriptor, and file modes are
+set on the opened descriptor, not through a separately resolved pathname.
+
+The rollback journal tracks `(parent directory fd, basename, device, inode)`
+for each new file or directory. Before removal, rollback checks that the name
+still resolves to the exact created inode, and never removes a different file
+that replaced an earlier transaction object. It preserves the marker, any
+unrelated root contents, and any differently-owned replacement objects.
+
+Additional offline tests passed for (a) a symlink swapped in after planning,
+(b) a file appearing after the plan before exclusive creation, and (c) an
+unrelated file substituted at the transaction-owned name before rollback.
+The original 18-file assembler, pinning and safety gate remain intact.
+
+**Scope limitation:** The test root is owned by the invoking non-root user and
+is deliberately created under `/tmp` or `/mnt/data`. This is not a full
+hostile-root security review or proof of privilege separation for `/etc` or
+`/home`. Package installation, systemd/udev/Nginx activation, supervised
+calibration, firmware flashing, and the fresh-CB1 physical acceptance still
+require their own implementation and tests. `install.sh --apply` remains disabled.
