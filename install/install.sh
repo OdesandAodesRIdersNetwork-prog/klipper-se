@@ -1,49 +1,68 @@
 #!/usr/bin/env bash
-# Controlled, NOT-YET-ENABLED installer. --check / --plan are non-mutating.
+# Klipper-SE fresh-CB1 installer entrypoint. Safe plans only until hardware proof.
+# Do NOT change the --apply refusal before physical clean-install acceptance.
 set -euo pipefail
 here="$(cd -- "$(dirname -- "$0")" && pwd)"
+usage() {
+  echo "Usage: $0 --check | --plan | --host-preflight USER | --sources-plan | --packages-plan USER | --groups-plan USER | --host-files-plan USER PAYLOAD | --runtime-plan USER PINNED_SOURCES | --services-plan USER | --apply" >&2
+  exit 2
+}
 case "${1:---help}" in
   --check)
-    bash "$here/verify-packaging.sh"
+    [[ "$#" == 1 ]] || usage
+    exec bash "$here/verify-packaging.sh"
     ;;
   --plan)
+    [[ "$#" == 1 ]] || usage
     cat <<'PHASES'
-1. Confirm a separate blank CB1; run read-only preflight and refuse existing install paths.
-2. Review the fixed Bookworm apt plan; run the separately confirmed apt phase on fresh CB1 only.
-3. Review dialout and moonraker-admin plan; separately configure service-user groups.
-4. Stage and verify pinned Klipper-SE, Moonraker, Mainsail and mainsail-config sources.
-5. Build separate Klippy/Moonraker scratch Python environments; verify imports and packages.
-6. Build accepted MCU firmware; STOP for manual SD flashing and subsequent identity verification.
-7. Rehearse inert 18-file connection-check payload transaction in a disposable scratch root.
-8. Implement/test a safe host deployment and services transaction (NOT YET ENABLED).
-9. Acquire target-unit values via supervised safe calibration (NOT YET VALIDATED).
-10. Recheck service/display/recovery and run all 17 physical tests on the new printer.
+Fresh-CB1 Klipper-SE installation sequence (not a released installer):
+01. On a SEPARATE, blank Bookworm ARM64 CB1: run read-only host preflight.
+02. Review and explicitly run separately gated apt phase, then group phase.
+03. Fetch/verify pinned Klipper-SE, Moonraker, mainsail-config and Mainsail source.
+04. Render connection-check-only host/printer templates and assemble 18-file payload.
+05. Run --host-files-plan and rehearse a disposable host transaction first.
+06. On blank CB1 only, separately deploy host files (root, explicit confirmation).
+07. Install pinned source, Python environments and Mainsail assets as service user.
+08. Build firmware from exact MCU .config; STOP for MANUAL SD flashing and identity.
+09. After serial identity review, explicitly activate connection-only services.
+10. STOP: derive and supervise all nine target-specific calibration values.
+11. Validate first full hardware config, PID, mesh, stock screen, MCU recovery.
+12. Prove all 17 physical acceptance checks; only then consider release.
+No stage auto-flashes, issues G-code or authorizes print-ready operation.
 PHASES
     ;;
   --host-preflight)
-    if [[ "$#" -ne 2 ]]; then echo 'Usage: install.sh --host-preflight USERNAME' >&2; exit 2; fi
+    [[ "$#" == 2 ]] || usage
     exec python3 "$here/preflight-cb1.py" --user "$2"
     ;;
   --sources-plan)
-    if [[ "$#" -ne 1 ]]; then echo 'Usage: install.sh --sources-plan' >&2; exit 2; fi
+    [[ "$#" == 1 ]] || usage
     exec python3 "$here/stage-dependencies.py" --plan
     ;;
   --packages-plan)
-    if [[ "$#" -ne 2 ]]; then echo 'Usage: install.sh --packages-plan USERNAME' >&2; exit 2; fi
+    [[ "$#" == 2 ]] || usage
     exec python3 "$here/provision-packages.py" --plan --user "$2"
     ;;
   --groups-plan)
-    if [[ "$#" -ne 2 ]]; then echo 'Usage: install.sh --groups-plan USERNAME' >&2; exit 2; fi
+    [[ "$#" == 2 ]] || usage
     exec python3 "$here/provision-groups.py" --plan --user "$2"
     ;;
+  --host-files-plan)
+    [[ "$#" == 3 ]] || usage
+    exec python3 "$here/deploy-host.py" --plan --user "$2" --payload "$3"
+    ;;
+  --runtime-plan)
+    [[ "$#" == 3 ]] || usage
+    exec python3 "$here/materialize-runtime.py" --plan --user "$2" --sources "$3"
+    ;;
+  --services-plan)
+    [[ "$#" == 2 ]] || usage
+    exec python3 "$here/activate-services.py" --plan --user "$2"
+    ;;
   --apply)
-    echo 'REFUSED: --apply remains disabled; Stage 7 validates scratch-only transactions, not CB1 installation.' >&2
-    echo 'Real provisioning, supervised target-only calibration, firmware flash and 17-test fresh acceptance remain gated.' >&2
+    echo 'REFUSED: full installer --apply is disabled until a fresh CB1 and stock V3 SE are physically validated.' >&2
+    echo 'Individual candidate phases are documented but must not be run on the accepted printer.' >&2
     exit 3
     ;;
-  *)
-    echo "Usage: $0 --check | --plan | --host-preflight USERNAME | --sources-plan | --packages-plan USERNAME | --groups-plan USERNAME | --apply" >&2
-    echo 'Safe subcommands are listed above; --apply is deliberately disabled.' >&2
-    exit 2
-    ;;
+  *) usage ;;
 esac
