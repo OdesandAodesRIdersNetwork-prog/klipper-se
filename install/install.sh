@@ -19,13 +19,13 @@ case "${1:---help}" in
 PHASES
     ;;
   --apply)
-    echo 'REFUSED: first packaging commit is a reviewed scaffold, not a complete or tested installer.' >&2
-    echo 'Recovery/service templates and safe first-boot calibration workflow must be implemented first.' >&2
+    echo 'REFUSED: this packaging branch is not a validated or enabled host installer.' >&2
+    echo 'Safe first-boot calibration, conflict-safe deployment, blank-CB1 and physical validation remain required.' >&2
     exit 3
     ;;
   *)
     echo "Usage: $0 --check | --plan | --apply" >&2
-    echo 'Only --check and --plan are available in this initial packaging commit.' >&2
+    echo 'Only --check and --plan are available in the current staging checkpoint.' >&2
     exit 2
     ;;
 esac

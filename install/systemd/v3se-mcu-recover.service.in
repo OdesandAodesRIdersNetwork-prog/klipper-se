@@ -1,0 +1,9 @@
+[Unit]
+Description=V3 SE recover lost MCU after CH341 serial device returns
+After=network-online.target moonraker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@USER@
+ExecStart=@HOME@/v3se-mcu-recover.sh

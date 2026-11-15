@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# On CH341 reappearance, recover ONLY the specific lost-MCU shutdown.
+# This is an independently implemented safe template of the accepted behaviour.
+# Never invoke a restart for an unrelated shutdown, print, or unreachable API.
+set -euo pipefail
+MCU="@MCU_SERIAL_BY_ID@"
+MOONRAKER="@MOONRAKER_URL@"
+LOG="@PRINTER_DATA@/logs/v3se-mcu-recover.log"
+
+log() {
+    printf '%s v3se-mcu-recover: %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$LOG"
+}
+
+sleep 3
+if [[ ! -e "$MCU" ]]; then
+    log 'No expected MCU; ignoring udev event'
+    exit 0
+fi
+
+if ! result="$(curl --fail --silent --show-error --max-time 5 "$MOONRAKER/printer/info" 2>/dev/null)"; then
+    log 'Moonraker not reachable; no action'
+    exit 0
+fi
+
+# Query Moonraker, not merely a stale Klipper log line.  Refuse all other
+# states; a returned USB adapter by itself is never grounds to restart.
+if ! printf '%s' "$result" | python3 -c '
+import json,sys
+try:
+    envelope = json.load(sys.stdin)
+    state = envelope["result"]["state"]
+    message = envelope["result"]["state_message"]
+except (ValueError, KeyError, TypeError):
+    sys.exit(1)
+sys.exit(0 if state == "shutdown" and "Lost communication with MCU" in message else 1)
+'; then
+    log 'Moonraker not in verified lost-MCU shutdown; no action'
+    exit 0
+fi
+
+if curl --fail --silent --show-error --max-time 10 \
+    --header 'Content-Type: application/json' \
+    --request POST --data '{"script":"FIRMWARE_RESTART"}' \
+    "$MOONRAKER/printer/gcode/script" >/dev/null 2>&1; then
+    log 'Requested FIRMWARE_RESTART for verified returned MCU'
+else
+    log 'FIRMWARE_RESTART request failed'
+    exit 1
+fi

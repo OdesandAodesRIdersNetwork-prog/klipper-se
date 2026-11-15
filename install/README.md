@@ -1,21 +1,23 @@
-# Initial packaging staging area
+# Klipper-SE packaging staging assets (not yet deployable)
 
-This directory contains **first-phase reviewed scaffolding**, not an enabled installer. `install.sh --apply` is deliberately blocked. `install.sh --check` and `--plan` are safe, non-mutating operations.
+The isolated packaging branch contains the accepted runtime source pins, exact verified MCU `.config`, machine-specific-safe `printer.cfg.in` markers, accepted print macros, and the staged host service/recovery templates. **Nothing here is an enabled installer.**
 
-## Already packaged
+`bash install/install.sh --plan` prints the installation sequence. `bash install/install.sh --check` checks the package and exercises local renderer/recovery fixtures, then deliberately returns **exit 4** until the real installation gates are complete. `--apply` refuses with exit 3.
 
-- Exact accepted version pins and Mainsail release checksum.
-- Candidate Bookworm top-level Debian package manifest.
-- Source-derived `printer.cfg.in` with *mandatory, unresolved per-unit calibration markers*; does not copy the accepted printer's calibration values or SAVE_CONFIG.
-- Byte-exact accepted resolved MCU `.config` (`install/firmware/v3se-stm32f103xe.config`), verified against SHA256 in `versions.env`.\n- Exact `macro.cfg` contents observed on the accepted CB1, plus the already-tracked `config/v3se-macros.cfg`.
-- Preflight/check/read-only validation scaffolding, guarded firmware build, documentation and acceptance checklist.
+## Staging tests
 
-## Required before enabling --apply
+```bash
+bash install/tests/test-render.sh
+bash install/tests/test-recovery.sh
+python3 install/render-templates.py --user testuser --home /home/testuser --output /tmp/v3se-stage-test
+```
 
+Choose a fresh output directory. This generates only ordinary files inside the staging destination and **never** installs systemd units, enables udev, starts services, formats media, or touches any connected printer.
 
-- Accepted recovery shell script, systemd service and udev rule, with deliberate user/path parameterization.
-- Moonraker and Klipper service/env templates, Moonraker config, Mainsail config, Nginx site/upstreams mapping.
-- Safe uncalibrated-printer startup/calibration pathway and renderer for per-unit config values.
-- Static tests and then isolated blank-CB1 reproducibility proof.
+Host templates are under `install/systemd/`, `install/recovery/`, `install/udev/`, `install/moonraker/`, `install/mainsail/`, and `install/nginx/`. See `docs/V3SE_SERVICE_TEMPLATES.md` for intended locations and details. The recovery script is a fail-closed, newly parameterized equivalent of the accepted behaviour. The udev rule is the exact accepted rule.
 
-No accepted source code, active branch or running printer state is modified by these files.
+## Before enabling actual installation
+
+The following remain mandatory: reviewed two-stage safe first-boot calibration and target-only measurements; source-pin and package bootstrap; file conflict/backup checks; Nginx and systemd syntax verification on Debian 12/Armbian CB1; Moonraker security/access verification; manual firmware flash; and blank-CB1 plus printer physical acceptance. See `docs/V3SE_FIRST_BOOT_CALIBRATION_DESIGN.md`.
+
+The accepted `v3se-klipper-port` branch and the live printer remain untouched.

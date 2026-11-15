@@ -11,7 +11,15 @@ for f in install/versions.env install/packages-bookworm.txt install/common.sh \
   install/install.sh install/build-firmware.sh install/verify-install.sh \
   install/printer/printer.cfg.in install/printer/macro.cfg \
   docs/V3SE_CLEAN_INSTALL.md docs/V3SE_FLASH_SD.md \
-  docs/V3SE_CALIBRATION.md docs/V3SE_ACCEPTANCE_CHECKLIST.md docs/V3SE_RECOVERY.md
+  docs/V3SE_CALIBRATION.md docs/V3SE_ACCEPTANCE_CHECKLIST.md docs/V3SE_RECOVERY.md \
+  docs/V3SE_SERVICE_TEMPLATES.md docs/V3SE_FIRST_BOOT_CALIBRATION_DESIGN.md \
+  install/render-templates.py install/tests/test-render.sh install/tests/test-recovery.sh \
+  install/systemd/klipper.service.in install/systemd/klipper.env.in \
+  install/systemd/moonraker.service.in install/systemd/moonraker.env.in \
+  install/systemd/v3se-mcu-recover.service.in install/recovery/v3se-mcu-recover.sh.in \
+  install/udev/99-v3se-mcu-recover.rules install/moonraker/moonraker.conf.in \
+  install/mainsail/config.json.in install/nginx/mainsail.site.in \
+  install/nginx/upstreams.conf.in install/nginx/common_vars.conf
  do check "$f"; done
 if [[ "$(grep -vE '^\s*(#|$)' install/packages-bookworm.txt | wc -l | tr -d ' ')" != 17 ]]; then
   echo 'ERROR: Bookworm top-level package count is not 17'; bad=1
@@ -33,11 +41,16 @@ if [[ -f install/firmware/v3se-stm32f103xe.config ]]; then
 else
   echo 'BLOCKED: exact accepted MCU .config not yet captured (no substitute allowed).'; incomplete=1
 fi
-if [[ ! -f install/recovery/v3se-mcu-recover.sh.in ]]; then
-  echo 'BLOCKED: exact accepted recovery script not yet captured/templated.'; incomplete=1
+if [[ "$bad" -eq 0 ]]; then
+  bash -n install/install.sh install/common.sh install/build-firmware.sh
+  bash -n install/recovery/v3se-mcu-recover.sh.in
+  bash install/tests/test-render.sh || bad=1
+  bash install/tests/test-recovery.sh || bad=1
 fi
-if [[ ! -f install/systemd/v3se-mcu-recover.service.in ]]; then
-  echo 'BLOCKED: exact accepted recovery service not yet captured/templated.'; incomplete=1
+if [[ "$bad" -eq 0 ]]; then
+  echo 'BLOCKED: non-printing first-boot calibration and conflict-safe service deployment remain unimplemented.'
+  echo 'BLOCKED: no blank-CB1/physical acceptance of new templates; installer --apply intentionally disabled.'
+  incomplete=1
 fi
 if [[ "$bad" -ne 0 ]]; then exit 1; fi
 if [[ "$incomplete" -ne 0 ]]; then

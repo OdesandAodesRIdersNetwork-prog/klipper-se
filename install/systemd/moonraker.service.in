@@ -1,0 +1,19 @@
+[Unit]
+Description=Moonraker API Server for Klipper-SE
+Documentation=https://moonraker.readthedocs.io/
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+SupplementaryGroups=moonraker-admin
+RemainAfterExit=yes
+WorkingDirectory=@HOME@/moonraker
+EnvironmentFile=@PRINTER_DATA@/systemd/moonraker.env
+ExecStart=@HOME@/moonraker-env/bin/python $MOONRAKER_ARGS
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

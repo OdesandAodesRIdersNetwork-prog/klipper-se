@@ -1,0 +1,28 @@
+# Minimal accepted Moonraker interface; fill paths from selected service user.
+[server]
+host: 0.0.0.0
+port: @MOONRAKER_PORT@
+klippy_uds_address: @PRINTER_DATA@/comms/klippy.sock
+
+[authorization]
+trusted_clients:
+    127.0.0.1
+    ::1
+cors_domains:
+    *://localhost:*
+
+[history]
+
+# The pinned initial deployments are handled by Klipper-SE, not auto-updated.
+[update_manager mainsail]
+type: web
+channel: stable
+repo: mainsail-crew/mainsail
+path: @HOME@/mainsail
+
+[update_manager mainsail-config]
+type: git_repo
+path: @HOME@/mainsail-config
+origin: https://github.com/mainsail-crew/mainsail-config.git
+primary_branch: master
+managed_services: klipper

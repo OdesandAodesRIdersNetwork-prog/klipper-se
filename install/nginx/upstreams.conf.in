@@ -1,0 +1,4 @@
+# Nginx http{} context, installed under /etc/nginx/conf.d.
+upstream apiserver {
+    server 127.0.0.1:@MOONRAKER_PORT@;
+}

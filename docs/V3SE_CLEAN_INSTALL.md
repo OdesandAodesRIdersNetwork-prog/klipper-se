@@ -1,6 +1,6 @@
 # Klipper-SE clean installation on a new CB1
 
-**Status: initial packaging scaffold, not a runnable installer yet.** `install/install.sh --apply` intentionally refuses to change a host until the full required templates and calibration gates are implemented and statically validated. No CB1 should be installed from this initial commit.
+**Status: packaging staging only, not a runnable installer yet.** `install/install.sh --apply` intentionally refuses to change a host until the full required templates and calibration gates are implemented and statically validated. No CB1 should be installed from this initial commit.
 
 ## Source contract
 
@@ -17,8 +17,14 @@ KIAUH is **not required**. Minimal steps will be internalized. Do not use mutabl
 5. Verify exact accepted MCU `.config` hash, build firmware and **stop** for documented manual SD flash. The exact resolved file is now included at `install/firmware/v3se-stm32f103xe.config` and its hash is checked before use.
 6. Render the hardware profile only from target-machine measured calibration data. Do **not** paste the accepted printer's `SAVE_CONFIG` tail or PID/mesh/Z/strain values.
 7. Add stock display, macros and Klipper systemd service; install pinned Moonraker Python/system requirements, service, Mainsail, mainsail-config, and Nginx templates.
-8. Enable udev-triggered MCU recovery only after original rule and script are safely templated and checked.
+8. Stage the accepted CH341 udev rule and the fail-closed recovery script; do not enable them until the isolated CB1 installation and physical recovery tests pass.
 9. Run read-only software checks, target-unit calibration, and the complete physical acceptance tests.
+
+## Stage-only host templates
+
+The host config renderer `install/render-templates.py` creates a new local staging directory and refuses existing destinations or system paths. The proposed file layout and security boundaries are documented in `docs/V3SE_SERVICE_TEMPLATES.md`. Its tests do not prove a successful blank-CB1 installation.
+
+`bash install/install.sh --check` returns exit 4 intentionally after successful offline staging checks because the first-boot calibration and deployment safety gates are still incomplete.
 
 ## Safety and release gate
 
