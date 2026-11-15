@@ -17,12 +17,21 @@ A new machine has no valid target HX711 sensitivity/tare, CR Touch Z offset, PID
 
 The actual supervised path to obtain those nine values from a completely uncalibrated machine remains to be physically validated. Do not fabricate PID, Z or strain defaults to bypass the gate. See `docs/V3SE_FIRST_BOOT_CALIBRATION_DESIGN.md` and `docs/V3SE_CALIBRATION_VALUES.md`.
 
+## Whole-package offline rehearsal
+
+The Stage 5 review path includes accepted `macros.cfg` (AUTO_Z etc), `macro.cfg` (print macros), exact MCU `.config`, pinned dependency records and 13 rendered host/printer files. All 18 are checked by SHA256. The simulator copies them only into a brand-new scratch model of `/etc` and `/home/<user>` and proves rollback after an injected error. See `docs/V3SE_OFFLINE_REHEARSAL.md`.
+
+This is **not** a working CB1 installation: it does not fetch source, install packages, create user/groups, provision Python, flash firmware, run systemd, populate Mainsail-config, run PID/strain/Z calibration, or prove hardware safety. Those remain explicit release gates.
+
 ## Offline review only
 
 RUN AS `randy` or another unprivileged build user, **not root**:
 
 ```bash
 bash install/install.sh --plan
+python3 install/rehearse-offline.py --user testuser --home /home/testuser \
+  --mcu-serial /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0 \
+  --output /tmp/v3se-stage5-review-new
 python3 install/tests/test-printer-gate.py
 python3 install/tests/test-deployment.py
 bash install/install.sh --check

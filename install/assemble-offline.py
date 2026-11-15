@@ -15,6 +15,23 @@ import sys
 
 HERE = Path(__file__).resolve().parent
 MARKER = re.compile(r"@[A-Z][A-Z0-9_]*@")
+# These two macro files are required by the accepted production printer.cfg.
+# Lock the bytes used for the initial reproducibility proof, not just names.
+MACRO_SOURCES = {
+    'user/printer_data/config/macros.cfg': (
+        HERE.parent / 'config/v3se-macros.cfg',
+        'c04bc6a5a5b24592aefe68b2b06bd14ecb78f1e930d2109b9c5e471af9677442'),
+    'user/printer_data/config/macro.cfg': (
+        HERE / 'printer/macro.cfg',
+        '96b2e4320532870a673ff2c6d1e33431f67e9b35bb6d7cc7981f9848de2b8d3e'),
+}
+# Manifested build inputs, included for review but not installed on a CB1.
+BUILD_INPUTS = {
+    'metadata/versions.env': HERE / 'versions.env',
+    'metadata/packages-bookworm.txt': HERE / 'packages-bookworm.txt',
+    'metadata/v3se-stm32f103xe.config': HERE / 'firmware/v3se-stm32f103xe.config',
+}
+EXPECTED_MCU_CONFIG_SHA256 = 'ee38872bc64d4595af07445078013b5e366b796d360781b07c99c60a574e7777'
 HOST = {
     'systemd/klipper.service': 'host/systemd/klipper.service',
     'systemd/moonraker.service': 'host/systemd/moonraker.service',
@@ -69,6 +86,15 @@ def assemble(host_dir, printer_dir, output):
     content = {dest: require_plain_file(host_dir, src) for src, dest in HOST.items()}
     printer = require_plain_file(printer_dir, 'printer.cfg')
     content['user/printer_data/config/printer.cfg'] = printer
+    for dest, (source, expected_hash) in MACRO_SOURCES.items():
+        data = require_plain_file(source.parent, source.name)
+        if hashlib.sha256(data).hexdigest() != expected_hash:
+            raise ValueError('accepted macro content digest mismatch: ' + str(source))
+        content[dest] = data
+    for dest, source in BUILD_INPUTS.items():
+        content[dest] = require_plain_file(source.parent, source.name)
+    if hashlib.sha256(content['metadata/v3se-stm32f103xe.config']).hexdigest() != EXPECTED_MCU_CONFIG_SHA256:
+        raise ValueError('accepted MCU configuration SHA256 mismatch')
     # The connection-check profile intentionally has no configured heaters/motors.
     text = printer.decode('utf-8')
     is_connection = 'kinematics: none' in text

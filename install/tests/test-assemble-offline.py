@@ -27,9 +27,15 @@ with tempfile.TemporaryDirectory(prefix='v3se-assembly-test-') as tmp:
     out = root / 'payload'
     manifest = mod.assemble(host, printer, out)
     assert manifest['mode'] == 'connection-check'
-    assert len(manifest['files']) == len(mod.HOST) + 1
+    assert len(manifest['files']) == len(mod.HOST) + 1 + len(mod.MACRO_SOURCES) + len(mod.BUILD_INPUTS)
     assert all((out / x['path']).is_file() for x in manifest['files'])
     assert 'NOT_INSTALLABLE' in (out / 'MANIFEST.json').read_text()
+    for mandatory in ('user/printer_data/config/macros.cfg',
+                      'user/printer_data/config/macro.cfg',
+                      'metadata/versions.env', 'metadata/packages-bookworm.txt',
+                      'metadata/v3se-stm32f103xe.config'):
+        assert (out / mandatory).is_file(), mandatory
+
     try:
         mod.assemble(host, printer, out)
         assert False, 'overwriting existing payload was not refused'
@@ -49,4 +55,4 @@ with tempfile.TemporaryDirectory(prefix='v3se-assembly-test-') as tmp:
     except ValueError:
         pass
     assert not (root / 'unsafe').exists()
-print('PASS: offline assembler digest manifest, no overwrite, no source overlap, no symlink escape')
+print('PASS: complete 18-file payload, digest manifest, macro/build inputs, no overwrite, no source overlap, no symlink escape')
