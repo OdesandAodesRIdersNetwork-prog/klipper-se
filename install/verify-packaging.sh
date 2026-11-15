@@ -21,6 +21,10 @@ for f in install/versions.env install/packages-bookworm.txt install/common.sh \
   docs/V3SE_STAGE7_APT_PROVISIONING.md \
   install/provision-groups.py install/tests/test-provision-groups.py \
   docs/V3SE_STAGE7_GROUP_PROVISIONING.md \
+  install/deploy-host.py install/tests/test-deploy-host.py \
+  install/materialize-runtime.py install/tests/test-materialize-runtime.py \
+  install/activate-services.py install/tests/test-activate-services.py \
+  docs/V3SE_CONNECTED_INSTALL_RUNBOOK.md \
   install/simulate-deployment.py install/tests/test-package-sandbox.py \
   install/rehearse-offline.py install/tests/test-rehearse-offline.py \
   install/firmware/v3se-stm32f103xe.config \
@@ -80,6 +84,9 @@ python3 install/tests/test-transaction-sandbox.py || bad=1
 python3 install/tests/test-prepare-venvs.py || bad=1
 python3 install/tests/test-provision-packages.py || bad=1
 python3 install/tests/test-provision-groups.py || bad=1
+python3 install/tests/test-deploy-host.py || bad=1
+python3 install/tests/test-materialize-runtime.py || bad=1
+python3 install/tests/test-activate-services.py || bad=1
 if [[ "$bad" -ne 0 ]]; then exit 1; fi
 printf '%s\n' 'Offline packaging and safety staging tests PASS.'
 printf '%s\n' 'BLOCKED: installation --apply, supervised calibration acquisition and blank-CB1/physical acceptance are not implemented or validated.'
