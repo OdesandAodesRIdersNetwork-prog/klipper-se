@@ -70,3 +70,7 @@ The source/pip compatibility of an actual Bookworm ARM64 CB1 is **not yet demons
 ## Stage 7: explicit fresh-CB1 Debian package phase
 
 `install/provision-packages.py --plan --user USERNAME` is read-only and reports the supported Bookworm ARM64 host checks, fixed 17-package manifest and apt commands. Its separate `--install` option requires root and the exact `FRESH_CB1_APT_PACKAGES_ONLY` confirmation, and can really run apt on a new CB1; it is **not** currently authorized for the accepted CB1 or a full-install acceptance run. Apt may start distro services and is not transactionally reversible. Offline mocked tests live in `install/tests/test-provision-packages.py`. See `docs/V3SE_STAGE7_APT_PROVISIONING.md`. The main `install.sh --apply` remains disabled.
+
+## Stage 7: fresh-CB1 serial and Moonraker group bootstrap
+
+`install/provision-groups.py --plan --user USERNAME` is read-only and verifies the fresh Debian 12/ARM64 host, complete apt prerequisite manifest, existing service user and non-conflicting group identities. Its separate `--configure` operation requires root and the exact `FRESH_CB1_GROUPS_ONLY` confirmation. It can really alter group membership on a new CB1, so it must never be run on the accepted printer. An interrupted `groupadd`/`usermod` sequence cannot be rolled back automatically. `install/tests/test-provision-groups.py` exercises the path with **fake user/group commands only**. See `docs/V3SE_STAGE7_GROUP_PROVISIONING.md`. Main `install.sh --apply` stays disabled.
