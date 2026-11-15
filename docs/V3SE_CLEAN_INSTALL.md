@@ -44,3 +44,7 @@ bash install/install.sh --check
 The optional offline assembler (`install/assemble-offline.py`) can create a checksum-indexed review bundle from the two rendered scratch trees. It is explicitly **not deployable**. No generated bundle represents calibrated or accepted hardware without the separate supervised checks.
 
 The deployment planner may report proposed paths, but **never copies, installs, restarts or configures** any service. It refuses existing destinations; production branch and live reference CB1 are protected. The final validation requires a fresh CB1, the actual stock Ender-3 V3 SE, and the accepted physical test sequence. The old stock display Z-offset menu issue still needs its separate later fix and retest.
+
+## Stage 7 development note (2026-11-15)
+
+A conflict-safe **sandbox-only** host transaction rehearsal is documented in `docs/V3SE_STAGE7_SANDBOX_TRANSACTION.md`. It is only an inert test of existing-file refusal, symlink rejection, transactional cleanup, and preservation of unrelated files. It does not satisfy real host provisioning or fresh-CB1 validation, and must not be treated as authority to run `--apply` or use the accepted printer as an installation target.
