@@ -48,3 +48,7 @@ The deployment planner may report proposed paths, but **never copies, installs, 
 ## Stage 7 development note (2026-11-15)
 
 A conflict-safe **sandbox-only** host transaction rehearsal is documented in `docs/V3SE_STAGE7_SANDBOX_TRANSACTION.md`. It is only an inert test of existing-file refusal, symlink rejection, transactional cleanup, and preservation of unrelated files. It does not satisfy real host provisioning or fresh-CB1 validation, and must not be treated as authority to run `--apply` or use the accepted printer as an installation target.
+
+## Stage 7 package bootstrap (offline verified only)
+
+The standalone `install/provision-packages.py` now provides an explicit read-only 17-package apt plan and a separately gated root-only install action for a genuinely blank CB1. This has been exercised **only with fake apt calls**, not against real ARM64 Bookworm. See `docs/V3SE_STAGE7_APT_PROVISIONING.md`. Apt is not automatically reversible and can start distro services; never run the action on the accepted reference CB1. Main `--apply` remains disabled.
