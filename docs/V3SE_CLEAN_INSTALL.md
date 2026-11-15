@@ -52,3 +52,7 @@ A conflict-safe **sandbox-only** host transaction rehearsal is documented in `do
 ## Stage 7 package bootstrap (offline verified only)
 
 The standalone `install/provision-packages.py` now provides an explicit read-only 17-package apt plan and a separately gated root-only install action for a genuinely blank CB1. This has been exercised **only with fake apt calls**, not against real ARM64 Bookworm. See `docs/V3SE_STAGE7_APT_PROVISIONING.md`. Apt is not automatically reversible and can start distro services; never run the action on the accepted reference CB1. Main `--apply` remains disabled.
+
+## Stage 7 serial and Moonraker account groups
+
+`install/provision-groups.py` supplies a read-only plan and separately gated root-only action to grant the existing service user `dialout` and `moonraker-admin` memberships on a separate blank CB1. Only mocked group commands have been tested so far. See `docs/V3SE_STAGE7_GROUP_PROVISIONING.md`. No real account database modifications or service startup have been verified. Never run it on the accepted CB1; the complete installer remains disabled.
