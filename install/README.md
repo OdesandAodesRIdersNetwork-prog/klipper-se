@@ -45,6 +45,12 @@ bash install/install.sh --check
 
 Always choose fresh staging paths. Files are never installed into `printer_data`, `/etc`, or any actual service directories by these staging scripts. Sample measurements are intentionally invalid and contain **no real printer calibration**. See `docs/V3SE_CALIBRATION_VALUES.md` and `docs/V3SE_OFFLINE_REHEARSAL.md`.
 
+## Stage 6: external-source and fresh-host gates
+
+The new **read-only** fresh-CB1 preflight is `install/preflight-cb1.py`, available via `bash install/install.sh --host-preflight USERNAME`. It checks the supported OS, required commands/packages, serial access and existing-installation conflicts without modifying any state. The exit status is never installation authorization.
+
+`install/stage-dependencies.py --plan` checks the review-locked release identities without network access. Its **explicit** `--fetch --output /tmp/NEWPATH` option makes network requests and writes only into a brand-new scratch directory, cloning the three pinned Git source revisions and checksum-verifying the pinned Mainsail ZIP. `--verify --output ...` rereads that stage without changes. None of these commands installs packages or starts services. See `docs/V3SE_STAGE6_PREFLIGHT_AND_SOURCES.md`.
+
 ## Remaining before installation can be enabled
 
 The blank-CB1 software acquisition/installation script, supervised intermediate calibration pathway to acquire the nine values, safe permissions and conflict-controlled deployment, required service checks, SD-card flash and physical 17-test acceptance are not yet complete. The stage-only tools must not be interpreted as an approved printer setup. Historical Kalico recovery is not a first-install dependency.

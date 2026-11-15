@@ -23,6 +23,10 @@ The Stage 5 review path includes accepted `macros.cfg` (AUTO_Z etc), `macro.cfg`
 
 This is **not** a working CB1 installation: it does not fetch source, install packages, create user/groups, provision Python, flash firmware, run systemd, populate Mainsail-config, run PID/strain/Z calibration, or prove hardware safety. Those remain explicit release gates.
 
+## Stage 6 source and host preflight (staging only)
+
+`bash install/install.sh --host-preflight USERNAME` reports blank-CB1 readiness, packages, service conflicts and serial access without changing any files. `bash install/install.sh --sources-plan` locks the accepted Git and Mainsail identities. `python3 install/stage-dependencies.py --fetch --output /tmp/NEWPATH` can acquire those exact sources into an unused scratch directory, checksum-verify the archive, and roll back partial staging. This is not an install. See `docs/V3SE_STAGE6_PREFLIGHT_AND_SOURCES.md`.
+
 ## Offline review only
 
 RUN AS `randy` or another unprivileged build user, **not root**:

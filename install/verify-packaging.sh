@@ -12,12 +12,14 @@ for f in install/versions.env install/packages-bookworm.txt install/common.sh \
   install/printer/target-measurements.example.json install/printer/macro.cfg \
   install/render-printer-config.py install/plan-deployment.py \
   install/assemble-offline.py install/tests/test-assemble-offline.py \
+  install/preflight-cb1.py install/tests/test-preflight-cb1.py \
+  install/stage-dependencies.py install/tests/test-stage-dependencies.py \
   install/simulate-deployment.py install/tests/test-package-sandbox.py \
   install/rehearse-offline.py install/tests/test-rehearse-offline.py \
   install/firmware/v3se-stm32f103xe.config \
   docs/V3SE_CLEAN_INSTALL.md docs/V3SE_FLASH_SD.md docs/V3SE_CALIBRATION.md \
   docs/V3SE_CALIBRATION_VALUES.md docs/V3SE_ACCEPTANCE_CHECKLIST.md \
-  docs/V3SE_OFFLINE_REHEARSAL.md \
+  docs/V3SE_OFFLINE_REHEARSAL.md docs/V3SE_STAGE6_PREFLIGHT_AND_SOURCES.md \
   docs/V3SE_RECOVERY.md docs/V3SE_SERVICE_TEMPLATES.md \
   docs/V3SE_FIRST_BOOT_CALIBRATION_DESIGN.md \
   install/render-templates.py install/tests/test-render.sh \
@@ -65,6 +67,8 @@ python3 install/tests/test-deployment.py || bad=1
 python3 install/tests/test-assemble-offline.py || bad=1
 python3 install/tests/test-package-sandbox.py || bad=1
 python3 install/tests/test-rehearse-offline.py || bad=1
+python3 install/tests/test-preflight-cb1.py || bad=1
+python3 install/tests/test-stage-dependencies.py || bad=1
 if [[ "$bad" -ne 0 ]]; then exit 1; fi
 printf '%s\n' 'Offline packaging and safety staging tests PASS.'
 printf '%s\n' 'BLOCKED: installation --apply, supervised calibration acquisition and blank-CB1/physical acceptance are not implemented or validated.'
