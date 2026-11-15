@@ -15,7 +15,9 @@ case "${1:---help}" in
 5. Verify exact accepted MCU .config, build firmware; STOP for manual SD flashing.
 6. Deploy machine-specific-safe config and macros only after calibration inputs exist.
 7. Install pinned Moonraker, Mainsail, mainsail-config, Nginx, and recovery.
-8. Verify software, calibrate target printer, then re-run all 17 physical tests.
+8. Rehearse conflict-safe 18-file filesystem transaction in marked scratch root only.
+9. On a separate fresh CB1: independently verify installed software and supervised calibration.
+10. Re-run all 17 physical tests before claiming reproducibility.
 PHASES
     ;;
   --host-preflight)
@@ -27,13 +29,13 @@ PHASES
     exec python3 "$here/stage-dependencies.py" --plan
     ;;
   --apply)
-    echo 'REFUSED: first packaging commit is a reviewed scaffold, not a complete or tested installer.' >&2
-    echo 'Exact MCU .config, recovery/service templates, and safe first-boot calibration workflow must be implemented first.' >&2
+    echo 'REFUSED: --apply remains disabled; Stage 7 validates scratch-only transactions, not CB1 installation.' >&2
+    echo 'Real provisioning, supervised target-only calibration, firmware flash and 17-test fresh acceptance remain gated.' >&2
     exit 3
     ;;
   *)
     echo "Usage: $0 --check | --plan | --host-preflight USERNAME | --sources-plan | --apply" >&2
-    echo 'Only --check and --plan are available in this initial packaging commit.' >&2
+    echo 'Safe subcommands are listed above; --apply is deliberately disabled.' >&2
     exit 2
     ;;
 esac
