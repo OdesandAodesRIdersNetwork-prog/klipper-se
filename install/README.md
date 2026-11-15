@@ -60,3 +60,9 @@ The blank-CB1 software acquisition/installation script, supervised intermediate 
 `install/transaction-sandbox.py` adds a marked scratch-root transaction rehearsal after the existing 18-file payload verification. It plans the exact allowlisted destinations, refuses any existing files or symlinked parents, and rolls back only files and directories created by a failed rehearsal. Unrelated scratch-root files and the root marker remain untouched. It refuses real user homes and system roots. Run `python3 install/tests/test-transaction-sandbox.py` for local unit fixtures; see `docs/V3SE_STAGE7_SANDBOX_TRANSACTION.md` for the full safe workflow.
 
 **This is not a privileged installer.** It still never executes apt/pip, starts services, flashes firmware or acquires target calibration. The `--apply` refusal (exit 3) and offline `--check` expected exit 4 remain unchanged.
+
+## Stage 7: pinned Klippy/Moonraker Python staging
+
+`install/prepare-venvs.py --plan` validates the **verified Stage 6 pinned source tree** and reports the requirements SHA256. `--build` creates actual separate Python 3.11 virtualenvs under a brand-new direct `/tmp/v3se-*` or `/mnt/data/v3se-*` scratch directory. It invokes pip and may use the network, so it is an explicit, non-root operation on a disposable machine only, not a live CB1 installation. Failure rolls back only the new scratch tree. Offline fixtures live in `install/tests/test-prepare-venvs.py`; see `docs/V3SE_STAGE7_PINNED_PYTHON_ENVS.md`.
+
+The source/pip compatibility of an actual Bookworm ARM64 CB1 is **not yet demonstrated**. Package installation, service deployment, firmware flash, supervised target calibration and fresh-printer acceptance remain future gates. `install.sh --apply` remains disabled.
