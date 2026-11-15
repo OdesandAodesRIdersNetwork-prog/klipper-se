@@ -14,6 +14,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import sys
 
 HERE = Path(__file__).resolve().parent
@@ -115,37 +116,109 @@ def preview(root, *, user, contents, mapping):
             'destinations': [str(dst.relative_to(root)) for _, dst, _ in entries]}
 
 
+def _open_root(root):
+    """Open verified sandbox by directory descriptor; do not follow final symlink."""
+    root = scratch_root(root, must_exist=True)
+    flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, 'O_NOFOLLOW', 0)
+    fd = os.open(root, flags)
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.geteuid():
+            refuse('sandbox descriptor does not refer to the owned root')
+        marker_fd = os.open(MARKER, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0), dir_fd=fd)
+        with os.fdopen(marker_fd, 'rb') as marker:
+            if marker.read(len(MARKER_BYTES) + 1) != MARKER_BYTES:
+                refuse('sandbox marker changed between planning and transaction')
+        return fd
+    except BaseException:
+        os.close(fd)
+        raise
+
+
+def _relative_parent(root, target):
+    relative = target.relative_to(root)
+    if not relative.parts or any(part in ('', '.', '..') for part in relative.parts):
+        refuse('unsafe relative transaction target')
+    return relative.parts[:-1], relative.parts[-1]
+
+
+def _descend_owned(root_fd, segments, created_directories):
+    """All traversals are anchored to an open directory fd with O_NOFOLLOW."""
+    flags = os.O_RDONLY | os.O_DIRECTORY | getattr(os, 'O_NOFOLLOW', 0)
+    parent = os.dup(root_fd)
+    try:
+        for component in segments:
+            if component in ('', '.', '..') or '/' in component:
+                refuse('invalid directory component')
+            try:
+                child = os.open(component, flags, dir_fd=parent)
+            except FileNotFoundError:
+                os.mkdir(component, 0o700, dir_fd=parent)
+                child = os.open(component, flags, dir_fd=parent)
+                st = os.fstat(child)
+                created_directories.append((os.dup(parent), component, st.st_dev, st.st_ino))
+            os.close(parent)
+            parent = child
+        return parent
+    except BaseException:
+        os.close(parent)
+        raise
+
+
+def _exclusive_write(parent_fd, name, data, mode, created_files):
+    if name in ('', '.', '..') or '/' in name:
+        refuse('invalid file component')
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
+    fd = os.open(name, flags, 0o600, dir_fd=parent_fd)
+    st = os.fstat(fd)
+    created_files.append((os.dup(parent_fd), name, st.st_dev, st.st_ino))
+    with os.fdopen(fd, 'wb') as handle:
+        os.fchmod(handle.fileno(), mode)
+        handle.write(data)
+
+
+def _rollback_owned(files, dirs):
+    """Remove only same-inode objects created by the current transaction."""
+    for journal in (reversed(files), reversed(dirs)):
+        for parent_fd, name, device, inode in journal:
+            try:
+                current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+                if current.st_dev != device or current.st_ino != inode:
+                    continue  # Another object now occupies this name. NEVER remove it.
+                # File journals carry regular files, directory journals carry dirs.
+                if stat.S_ISDIR(current.st_mode):
+                    os.rmdir(name, dir_fd=parent_fd)
+                elif stat.S_ISREG(current.st_mode):
+                    os.unlink(name, dir_fd=parent_fd)
+            except (OSError, FileNotFoundError):
+                pass  # Do not expand cleanup to unrelated or moved objects.
+
+
+def _close_journals(files, dirs):
+    for parent_fd, _, _, _ in files + dirs:
+        os.close(parent_fd)
+
+
 def rehearse(root, *, user, contents, mapping, fail_after=0):
     root = scratch_root(root, must_exist=True)
     entries = planned_entries(root, user=user, contents=contents, mapping=mapping)
     if not isinstance(fail_after, int) or fail_after < 0:
         refuse('invalid failure injection count')
+    # The path-based plan is advisory; the descriptor-anchored traversal below
+    # rechecks every component at the exact time each file is created.
+    root_fd = _open_root(root)
     created_files = []
     created_dirs = []
     try:
         for i, (source, target, data) in enumerate(entries, start=1):
-            parent_chain = []
-            cur = target.parent
-            while cur != root:
-                parent_chain.append(cur)
-                cur = cur.parent
-            for directory in reversed(parent_chain):
-                if directory.is_symlink():
-                    refuse('parent changed to symlink during transaction')
-                if not directory.exists():
-                    directory.mkdir(mode=0o700)
-                    created_dirs.append(directory)
-                elif not directory.is_dir():
-                    refuse('parent changed to non-directory during transaction')
-            if target.is_symlink() or os.path.lexists(target):
-                refuse('target appeared during transaction, refusing overwrite')
-            # exclusive create; never follow an existing target or truncate a file
-            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, 'O_NOFOLLOW', 0)
-            descriptor = os.open(target, flags, 0o600)
-            created_files.append(target)
-            with os.fdopen(descriptor, 'wb') as handle:
-                handle.write(data)
-            target.chmod(0o700 if source == 'user/v3se-mcu-recover.sh' else 0o600)
+            dirs, name = _relative_parent(root, target)
+            parent_fd = _descend_owned(root_fd, dirs, created_dirs)
+            try:
+                _exclusive_write(parent_fd, name, data,
+                                 0o700 if source == 'user/v3se-mcu-recover.sh' else 0o600,
+                                 created_files)
+            finally:
+                os.close(parent_fd)
             if fail_after and i == fail_after:
                 raise RuntimeError('injected Stage 7 partial-transaction failure')
         evidence = {'status': 'INERT_SANDBOX_TRANSACTION_ONLY',
@@ -153,22 +226,16 @@ def rehearse(root, *, user, contents, mapping, fail_after=0):
                     'files_created': len(created_files),
                     'payload_digest': hashlib.sha256(b''.join(contents[k] for k in sorted(contents))).hexdigest(),
                     'warning': 'No host provisioning, services, firmware, calibration or printer access occurred.'}
-        receipt = root / 'STAGE7_REHEARSAL.json'
-        with receipt.open('xb') as f:
-            f.write((json.dumps(evidence, sort_keys=True, indent=2) + '\n').encode())
-        created_files.append(receipt)
+        _exclusive_write(root_fd, 'STAGE7_REHEARSAL.json',
+                         (json.dumps(evidence, sort_keys=True, indent=2) + '\n').encode(),
+                         0o600, created_files)
         return evidence
     except BaseException:
-        # Roll back this transaction's new objects only. Never delete the root,
-        # marker or any unrelated scratch-root content.
-        for p in reversed(created_files):
-            p.unlink(missing_ok=True)
-        for p in reversed(created_dirs):
-            try:
-                p.rmdir()
-            except OSError:
-                pass
+        _rollback_owned(created_files, created_dirs)
         raise
+    finally:
+        _close_journals(created_files, created_dirs)
+        os.close(root_fd)
 
 
 def main():
