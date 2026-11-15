@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 import os
 import tempfile
+import shutil
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'transaction-sandbox.py'
 spec = importlib.util.spec_from_file_location('stage7_transaction', SCRIPT)
@@ -76,6 +77,70 @@ with tempfile.TemporaryDirectory(prefix='v3se-stage7-test-') as temp:
         if symlink_root.exists():
             shutil.rmtree(symlink_root)
 
+    # Race introduced AFTER the path-based plan: descriptor traversal must reject
+    # a symlink swapped into a parent, never write outside the marked root.
+    swapped = Path('/tmp') / ('v3se-stage7-race-' + root.name)
+    outside = root / 'outside-protected'
+    outside.mkdir()
+    try:
+        tx.initialize(swapped)
+        original_plan = tx.planned_entries
+        def swapped_plan(*a, **kw):
+            result = original_plan(*a, **kw)
+            (swapped / 'etc').symlink_to(outside, target_is_directory=True)
+            return result
+        tx.planned_entries = swapped_plan
+        must_refuse(tx.rehearse, swapped, user='testuser', contents=contents, mapping=mapping)
+        assert not (outside / 'systemd').exists()
+        assert (swapped / tx.MARKER).read_bytes() == tx.MARKER_BYTES
+    finally:
+        tx.planned_entries = original_plan
+        if swapped.exists():
+            shutil.rmtree(swapped)
+
+    # An existing file raced into place after planning must not be truncated.
+    raced = Path('/tmp') / ('v3se-stage7-raced-file-' + root.name)
+    try:
+        tx.initialize(raced)
+        original_plan = tx.planned_entries
+        def existing_after_plan(*a, **kw):
+            result = original_plan(*a, **kw)
+            parent = raced / 'etc/systemd/system'
+            parent.mkdir(parents=True)
+            (parent / 'klipper.service').write_text('independent file')
+            return result
+        tx.planned_entries = existing_after_plan
+        must_refuse(tx.rehearse, raced, user='testuser', contents=contents, mapping=mapping)
+        assert (raced / 'etc/systemd/system/klipper.service').read_text() == 'independent file'
+    finally:
+        tx.planned_entries = original_plan
+        if raced.exists():
+            shutil.rmtree(raced)
+
+    # If a different file replaces a transaction-owned name after creation,
+    # rollback must NOT unlink that replacement (inode ownership check).
+    replaced = Path('/tmp') / ('v3se-stage7-replacement-' + root.name)
+    try:
+        tx.initialize(replaced)
+        original_write = tx._exclusive_write
+        def substituted_write(parent_fd, name, data, mode, journal):
+            original_write(parent_fd, name, data, mode, journal)
+            if name == 'klipper.service':
+                os.rename(name, 'moved-original.service', src_dir_fd=parent_fd,
+                          dst_dir_fd=parent_fd)
+                fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                             0o600, dir_fd=parent_fd)
+                with os.fdopen(fd, 'wb') as f:
+                    f.write(b'preserve unrelated replacement')
+        tx._exclusive_write = substituted_write
+        must_refuse(tx.rehearse, replaced, user='testuser', contents=contents,
+                    mapping=mapping, fail_after=1)
+        assert (replaced / 'etc/systemd/system/klipper.service').read_bytes() == b'preserve unrelated replacement'
+    finally:
+        tx._exclusive_write = original_write
+        if replaced.exists():
+            shutil.rmtree(replaced)
+
     must_refuse(tx.initialize, Path('/home/testuser/never-create-this'))
     must_refuse(tx.initialize, Path('/etc/never-create-this'))
     must_refuse(tx.initialize, Path('/tmp') / '..' / 'etc' / 'never-create-this')
@@ -83,4 +148,4 @@ with tempfile.TemporaryDirectory(prefix='v3se-stage7-test-') as temp:
     must_refuse(tx.preview, Path('/etc'), user='testuser', contents=contents, mapping=mapping)
     must_refuse(tx.planned_entries, Path('/tmp/some-root'), user='invalid user',
                 contents=contents, mapping=mapping)
-print('PASS: Stage7 scratch-only plan, conflict refusal, symlink protection, rollback and unrelated-file preservation')
+print('PASS: Stage7 dirfd-anchored transaction, symlink-swap refusal, O_EXCL race guard, inode-safe rollback and unrelated-file preservation')
