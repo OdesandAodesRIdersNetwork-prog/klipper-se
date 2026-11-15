@@ -1,4 +1,4 @@
-# NOT DIRECTLY RUNNABLE. Substitute all @...@ markers with target-machine measured values.
+# NOT DIRECTLY RUNNABLE. Use install/render-printer-config.py for verified target measurements.
 # DO NOT copy a second printer's SAVE_CONFIG data or print before acceptance.
 # This file contains pin mappings for the stock 2022 Creality Ender 3
 # V3 SE. To use this config, during "make menuconfig" select the
@@ -73,9 +73,6 @@ control: pid
 pid_Kp: @EXTRUDER_PID_KP@
 pid_Ki: @EXTRUDER_PID_KI@
 pid_Kd: @EXTRUDER_PID_KD@
-#pid_Kp: 29.248
-#pid_Ki: 1.652
-#pid_Kd: 129.423
 min_temp: 0
 max_temp: 270
 [heater_bed]
@@ -86,9 +83,6 @@ control: pid
 pid_Kp: @BED_PID_KP@
 pid_Ki: @BED_PID_KI@
 pid_Kd: @BED_PID_KD@
-#pid_kp: 66.978
-#pid_ki: 0.807
-#pid_kd: 1388.948
 min_temp: 0
 max_temp: 115
 [heater_fan hotend_fan]
@@ -166,7 +160,7 @@ pad_y: 25
 z_start_height: 5.0
 z_min_position: -2.0
 force_threshold: 20.0
-trigger_force: 20       # Native Kalico MCU stop threshold
+trigger_force: 20       # Generic 20g threshold retained for diagnostics, not PRTouch event math
 prtouch_trigger: True
 prtouch_min_hold: 1000
 prtouch_max_hold: 1500
@@ -222,8 +216,3 @@ gcode:
   M84
   TURN_OFF_HEATERS
 #  UPDATE_DELAYED_GCODE ID=DELAYED_PRINTER_OFF DURATION=60
-#[input_shaper]
-#shaper_freq_x: 42.8
-#shaper_type_x: 2hump_ei
-#shaper_freq_y: 43.0
-#shaper_type_y: 2hump_ei

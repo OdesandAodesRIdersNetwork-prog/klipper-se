@@ -1,9 +1,11 @@
-# Machine-specific calibration (mandatory operator stage)
+# Machine-specific calibration (mandatory supervised operator stage)
 
-**Status:** workflow requirements recorded; full fresh-printer calibration procedure has not yet been independently validated. Do not treat this document as authorization to move the toolhead or heat a new machine.
+**Status:** No blank-CB1/new-printer end-to-end calibration workflow has passed physical testing. This document is not authorization to move the toolhead, enable heaters or run a print.
 
-Do not transplant the accepted printer's `counts_per_gram`, `reference_tare_counts`, `[bltouch] z_offset`, PID coefficients, mesh, or generated SAVE_CONFIG section. The shipping `printer.cfg.in` uses unresolved placeholders; they must stay unresolved until target-specific measurements are available. Never invent generic numeric strain or PID values.
+Do not transplant the accepted printer's HX711 scaling or tare, CR Touch Z offset, PID coefficients, mesh or generated SAVE_CONFIG block. The `printer.cfg.in` file requires measured values. They are never filled from the accepted machine.
 
-Before attempting auto Z, prove the CR Touch is the global homing/mesh probe, verify the strain sensor wiring, proper sensor scaling and tare, and verify the accepted waveform trigger and frozen 32-sample event are available. Heater PID tuning must finish before the first print acceptance. Run target Auto-Z with the accepted nozzle-preparation and median-of-three/two-point procedure, then create the target CR Touch mesh. Inspect proposed Z offset and first-layer clearance before any deliberate SAVE_CONFIG. A successful command response is not, by itself, physical acceptance.
+The new `connection-check` profile intentionally contains no steppers, heater or probe. It permits only offline review and, after separate human approval and testing, an MCU communication check. It does **not** acquire calibrations.
 
-**Open engineering gate:** define and validate how an uncalibrated fresh printer can safely start up to acquire initial strain and Z measurements without requiring someone else's calibration defaults. Until solved, the installer must stop before generating a runnable production configuration.
+A separate supervised and validated method must collect heater PID values, strain-gauge scaling and tare, and a safe initial CR Touch/nozzle Z relationship. Once those target readings are recorded, `render-printer-config.py` can stage a full configuration candidate. Only then can qualified physical procedures establish the accepted event-derived Auto-Z, create the target 5×5 mesh and validate first-layer clearance. A successful command response is not, by itself, physical acceptance.
+
+See `docs/V3SE_CALIBRATION_VALUES.md` and `docs/V3SE_FIRST_BOOT_CALIBRATION_DESIGN.md` for the stage-only tools and remaining physical gate. Do not enable `install.sh --apply` until the entire blank-printer path is proven.

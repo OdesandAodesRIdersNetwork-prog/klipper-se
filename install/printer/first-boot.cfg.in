@@ -1,0 +1,14 @@
+# V3SE CONNECTION-CHECK ONLY. NOT A PRINT OR CALIBRATION CONFIG.
+# This file intentionally declares NO motors, NO heaters, NO probe,
+# NO display, and NO strain gauge. It cannot run the accepted 17 tests.
+# A human must finish and validate target-printer calibration separately.
+[mcu]
+serial: @MCU_SERIAL_BY_ID@
+baud: 250000
+restart_method: command
+
+[printer]
+# Klipper's built-in none kinematics has no configured steppers.
+kinematics: none
+max_velocity: 1
+max_accel: 1

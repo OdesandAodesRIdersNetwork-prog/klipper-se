@@ -1,23 +1,37 @@
-# Klipper-SE packaging staging assets (not yet deployable)
+# Klipper-SE packaging stage (NOT AN ENABLED INSTALLER)
 
-The isolated packaging branch contains the accepted runtime source pins, exact verified MCU `.config`, machine-specific-safe `printer.cfg.in` markers, accepted print macros, and the staged host service/recovery templates. **Nothing here is an enabled installer.**
+The accepted runtime source remains pinned to commit `ab759b0026ca69396446bf13b7a9767c59619297`. The packaging branch adds installer assets only. `install.sh --apply` always refuses with exit 3. `--check` runs offline validation but returns exit 4 intentionally until full blank-CB1/physical acceptance is proven. It does not install software or operate the printer.
 
-`bash install/install.sh --plan` prints the installation sequence. `bash install/install.sh --check` checks the package and exercises local renderer/recovery fixtures, then deliberately returns **exit 4** until the real installation gates are complete. `--apply` refuses with exit 3.
+## Package contents
 
-## Staging tests
+- Pinned Klipper-SE, Moonraker, Mainsail and mainsail-config versions.
+- Verified accepted STM32F103 MCU `.config`, printer hardware template and accepted slicer-facing macros.
+- Moonraker, Mainsail, Klipper, Nginx, systemd and udev templates and a fail-closed recovery script.
+- **Connection-check-only printer profile:** `install/printer/first-boot.cfg.in`, which contains neither steppers, heaters, probe nor display. This is untested on new hardware and must not be used to print or calibrate.
+- **Measured-values renderer:** `install/render-printer-config.py`, which refuses to stage a complete config without all nine explicit target-unit measurements and confirmation.
+- **Read-only conflict planner:** `install/plan-deployment.py`, which reports prospective file locations and rejects pre-existing live installations.
+
+## Offline staging and tests
 
 ```bash
+python3 install/render-printer-config.py --mode connection-check \
+  --mcu-serial /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0 \
+  --output /tmp/v3se-connection-review
+
+python3 install/render-templates.py --user testuser \
+  --home /home/testuser --output /tmp/v3se-host-review
+python3 install/plan-deployment.py --user testuser \
+  --home /home/testuser --stage /tmp/v3se-host-review
+
+python3 install/tests/test-printer-gate.py
+python3 install/tests/test-deployment.py
 bash install/tests/test-render.sh
 bash install/tests/test-recovery.sh
-python3 install/render-templates.py --user testuser --home /home/testuser --output /tmp/v3se-stage-test
+bash install/install.sh --check
 ```
 
-Choose a fresh output directory. This generates only ordinary files inside the staging destination and **never** installs systemd units, enables udev, starts services, formats media, or touches any connected printer.
+Always choose fresh staging paths. Files are never installed into `printer_data`, `/etc`, or any actual service directories by these staging scripts. Sample measurements are intentionally invalid and contain **no real printer calibration**. See `docs/V3SE_CALIBRATION_VALUES.md`.
 
-Host templates are under `install/systemd/`, `install/recovery/`, `install/udev/`, `install/moonraker/`, `install/mainsail/`, and `install/nginx/`. See `docs/V3SE_SERVICE_TEMPLATES.md` for intended locations and details. The recovery script is a fail-closed, newly parameterized equivalent of the accepted behaviour. The udev rule is the exact accepted rule.
+## Remaining before installation can be enabled
 
-## Before enabling actual installation
-
-The following remain mandatory: reviewed two-stage safe first-boot calibration and target-only measurements; source-pin and package bootstrap; file conflict/backup checks; Nginx and systemd syntax verification on Debian 12/Armbian CB1; Moonraker security/access verification; manual firmware flash; and blank-CB1 plus printer physical acceptance. See `docs/V3SE_FIRST_BOOT_CALIBRATION_DESIGN.md`.
-
-The accepted `v3se-klipper-port` branch and the live printer remain untouched.
+The blank-CB1 software acquisition/installation script, supervised intermediate calibration pathway to acquire the nine values, safe permissions and conflict-controlled deployment, required service checks, SD-card flash and physical 17-test acceptance are not yet complete. The stage-only tools must not be interpreted as an approved printer setup. Historical Kalico recovery is not a first-install dependency.

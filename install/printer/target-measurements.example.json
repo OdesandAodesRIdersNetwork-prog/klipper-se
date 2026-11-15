@@ -1,0 +1,16 @@
+{
+  "confirmation": "NOT_YET_MEASURED",
+  "printer_label": "REPLACE_WITH_TARGET_PRINTER_LABEL",
+  "measurement_notes": "REPLACE_WITH_REAL_MEASUREMENT_PROCEDURE_AND_DATE",
+  "values": {
+    "bltouch_z_offset": "REPLACE_WITH_MEASURED_VALUE",
+    "counts_per_gram": "REPLACE_WITH_MEASURED_VALUE",
+    "reference_tare_counts": "REPLACE_WITH_MEASURED_VALUE",
+    "extruder_pid_kp": "REPLACE_WITH_MEASURED_VALUE",
+    "extruder_pid_ki": "REPLACE_WITH_MEASURED_VALUE",
+    "extruder_pid_kd": "REPLACE_WITH_MEASURED_VALUE",
+    "bed_pid_kp": "REPLACE_WITH_MEASURED_VALUE",
+    "bed_pid_ki": "REPLACE_WITH_MEASURED_VALUE",
+    "bed_pid_kd": "REPLACE_WITH_MEASURED_VALUE"
+  }
+}
