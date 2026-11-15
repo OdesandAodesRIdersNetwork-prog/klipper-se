@@ -14,7 +14,7 @@ KIAUH is **not required**. Minimal steps will be internalized. Do not use mutabl
 2. Install explicit top-level package set in `install/packages-bookworm.txt` (17 packages), verifying package availability on a clean image.
 3. Pick a non-root service user and create `printer_data/{config,logs,gcodes,comms,systemd}` under their home; do not copy old sockets or runtime state.
 4. Check out the pinned Klipper-SE runtime source separately; create `klippy-env` using Debian Python 3.11-compatible `virtualenv`; install `scripts/klippy-requirements.txt`.
-5. Verify exact accepted MCU `.config` hash, build firmware and **stop** for documented manual SD flash. The current packaging scaffold deliberately does not include that exact source file until it can be captured byte-for-byte.
+5. Verify exact accepted MCU `.config` hash, build firmware and **stop** for documented manual SD flash. The exact resolved file is now included at `install/firmware/v3se-stm32f103xe.config` and its hash is checked before use.
 6. Render the hardware profile only from target-machine measured calibration data. Do **not** paste the accepted printer's `SAVE_CONFIG` tail or PID/mesh/Z/strain values.
 7. Add stock display, macros and Klipper systemd service; install pinned Moonraker Python/system requirements, service, Mainsail, mainsail-config, and Nginx templates.
 8. Enable udev-triggered MCU recovery only after original rule and script are safely templated and checked.

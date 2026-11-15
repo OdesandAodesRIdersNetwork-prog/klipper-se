@@ -1,6 +1,6 @@
 # V3 SE stock mainboard firmware: manual SD-card flashing
 
-**Initial build asset is pending. Do not flash until its exact accepted `.config` has been captured and verified.**
+**The exact accepted MCU `.config` is included and hash-verified. A clean firmware build and manual flash have not yet been performed.**
 
 The physically accepted target was STM32F103xe, 28 KiB bootloader, USART1 serial on PA10/PA9, plus the stock display USART2 PA2/PA3 bridge. Use the accepted build configuration byte-for-byte rather than reconstructing menuconfig answers from this description.
 

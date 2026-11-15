@@ -20,7 +20,7 @@ PHASES
     ;;
   --apply)
     echo 'REFUSED: first packaging commit is a reviewed scaffold, not a complete or tested installer.' >&2
-    echo 'Exact MCU .config, recovery/service templates, and safe first-boot calibration workflow must be implemented first.' >&2
+    echo 'Recovery/service templates and safe first-boot calibration workflow must be implemented first.' >&2
     exit 3
     ;;
   *)
