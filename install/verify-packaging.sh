@@ -15,6 +15,8 @@ for f in install/versions.env install/packages-bookworm.txt install/common.sh \
   install/preflight-cb1.py install/tests/test-preflight-cb1.py \
   install/stage-dependencies.py install/tests/test-stage-dependencies.py \
   install/transaction-sandbox.py install/tests/test-transaction-sandbox.py \
+  install/prepare-venvs.py install/tests/test-prepare-venvs.py \
+  docs/V3SE_STAGE7_PINNED_PYTHON_ENVS.md \
   install/simulate-deployment.py install/tests/test-package-sandbox.py \
   install/rehearse-offline.py install/tests/test-rehearse-offline.py \
   install/firmware/v3se-stm32f103xe.config \
@@ -71,6 +73,7 @@ python3 install/tests/test-rehearse-offline.py || bad=1
 python3 install/tests/test-preflight-cb1.py || bad=1
 python3 install/tests/test-stage-dependencies.py || bad=1
 python3 install/tests/test-transaction-sandbox.py || bad=1
+python3 install/tests/test-prepare-venvs.py || bad=1
 if [[ "$bad" -ne 0 ]]; then exit 1; fi
 printf '%s\n' 'Offline packaging and safety staging tests PASS.'
 printf '%s\n' 'BLOCKED: installation --apply, supervised calibration acquisition and blank-CB1/physical acceptance are not implemented or validated.'
