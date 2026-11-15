@@ -42,7 +42,9 @@ else
   echo 'BLOCKED: exact accepted MCU .config not yet captured (no substitute allowed).'; incomplete=1
 fi
 if [[ "$bad" -eq 0 ]]; then
-  bash -n install/install.sh install/common.sh install/build-firmware.sh
+  for script in install/install.sh install/common.sh install/build-firmware.sh; do
+    bash -n "$script" || bad=1
+  done
   bash -n install/recovery/v3se-mcu-recover.sh.in
   bash install/tests/test-render.sh || bad=1
   bash install/tests/test-recovery.sh || bad=1
@@ -54,7 +56,7 @@ if [[ "$bad" -eq 0 ]]; then
 fi
 if [[ "$bad" -ne 0 ]]; then exit 1; fi
 if [[ "$incomplete" -ne 0 ]]; then
-  echo 'Static staged-file checks passed, but required production assets remain missing.'
+  echo 'Static staging tests passed; installer deployment and physical validation remain blocked.'
   exit 4
 fi
 printf 'Static staging checks PASS. Further live compatibility and physical acceptance still required.\n'
