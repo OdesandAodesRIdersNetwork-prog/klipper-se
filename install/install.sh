@@ -8,16 +8,16 @@ case "${1:---help}" in
     ;;
   --plan)
     cat <<'PHASES'
-1. Run read-only fresh-CB1 preflight; verify Debian 12/Armbian aarch64 and explicit dependencies.
-2. Select non-root user/home; refuse any existing unbacked-up installation.
-3. Stage and verify pinned Klipper-SE/Moonraker/Mainsail sources independently of packaging branch.
-4. Create printer_data tree, Klippy virtualenv, and verify requirements.
-5. Verify exact accepted MCU .config, build firmware; STOP for manual SD flashing.
-6. Deploy machine-specific-safe config and macros only after calibration inputs exist.
-7. Install pinned Moonraker, Mainsail, mainsail-config, Nginx, and recovery.
-8. Rehearse conflict-safe 18-file filesystem transaction in marked scratch root only.
-9. On a separate fresh CB1: independently verify installed software and supervised calibration.
-10. Re-run all 17 physical tests before claiming reproducibility.
+1. Confirm a separate blank CB1; run read-only preflight and refuse existing install paths.
+2. Review the fixed Bookworm apt plan; run the separately confirmed apt phase on fresh CB1 only.
+3. Review dialout and moonraker-admin plan; separately configure service-user groups.
+4. Stage and verify pinned Klipper-SE, Moonraker, Mainsail and mainsail-config sources.
+5. Build separate Klippy/Moonraker scratch Python environments; verify imports and packages.
+6. Build accepted MCU firmware; STOP for manual SD flashing and subsequent identity verification.
+7. Rehearse inert 18-file connection-check payload transaction in a disposable scratch root.
+8. Implement/test a safe host deployment and services transaction (NOT YET ENABLED).
+9. Acquire target-unit values via supervised safe calibration (NOT YET VALIDATED).
+10. Recheck service/display/recovery and run all 17 physical tests on the new printer.
 PHASES
     ;;
   --host-preflight)
