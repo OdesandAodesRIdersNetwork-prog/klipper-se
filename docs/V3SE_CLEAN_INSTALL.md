@@ -56,3 +56,7 @@ The standalone `install/provision-packages.py` now provides an explicit read-onl
 ## Stage 7 serial and Moonraker account groups
 
 `install/provision-groups.py` supplies a read-only plan and separately gated root-only action to grant the existing service user `dialout` and `moonraker-admin` memberships on a separate blank CB1. Only mocked group commands have been tested so far. See `docs/V3SE_STAGE7_GROUP_PROVISIONING.md`. No real account database modifications or service startup have been verified. Never run it on the accepted CB1; the complete installer remains disabled.
+
+## Connected host-install candidate (Stage 7)
+
+The separate fresh-CB1 package, group, host-file, runtime-assets and connection-only service components now have one explicit guarded sequence in `docs/V3SE_CONNECTED_INSTALL_RUNBOOK.md`. The connected repo test suite uses only offline local Git/ZIP fixtures and fake apt/pip/systemctl runners. **Real CB1 execution, manual firmware flashing and target-printer calibration are not verified.** The master `install.sh --apply` remains disabled. Do not run candidate actions on the accepted reference CB1.
