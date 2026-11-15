@@ -28,13 +28,17 @@ PHASES
     if [[ "$#" -ne 1 ]]; then echo 'Usage: install.sh --sources-plan' >&2; exit 2; fi
     exec python3 "$here/stage-dependencies.py" --plan
     ;;
+  --packages-plan)
+    if [[ "$#" -ne 2 ]]; then echo 'Usage: install.sh --packages-plan USERNAME' >&2; exit 2; fi
+    exec python3 "$here/provision-packages.py" --plan --user "$2"
+    ;;
   --apply)
     echo 'REFUSED: --apply remains disabled; Stage 7 validates scratch-only transactions, not CB1 installation.' >&2
     echo 'Real provisioning, supervised target-only calibration, firmware flash and 17-test fresh acceptance remain gated.' >&2
     exit 3
     ;;
   *)
-    echo "Usage: $0 --check | --plan | --host-preflight USERNAME | --sources-plan | --apply" >&2
+    echo "Usage: $0 --check | --plan | --host-preflight USERNAME | --sources-plan | --packages-plan USERNAME | --apply" >&2
     echo 'Safe subcommands are listed above; --apply is deliberately disabled.' >&2
     exit 2
     ;;
