@@ -28,4 +28,6 @@ python3 install/tests/test-deployment.py
 bash install/install.sh --check
 ```
 
+The optional offline assembler (`install/assemble-offline.py`) can create a checksum-indexed review bundle from the two rendered scratch trees. It is explicitly **not deployable**. No generated bundle represents calibrated or accepted hardware without the separate supervised checks.
+
 The deployment planner may report proposed paths, but **never copies, installs, restarts or configures** any service. It refuses existing destinations; production branch and live reference CB1 are protected. The final validation requires a fresh CB1, the actual stock Ender-3 V3 SE, and the accepted physical test sequence. The old stock display Z-offset menu issue still needs its separate later fix and retest.

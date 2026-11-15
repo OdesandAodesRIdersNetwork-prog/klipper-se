@@ -9,6 +9,7 @@ The accepted runtime source remains pinned to commit `ab759b0026ca69396446bf13b7
 - Moonraker, Mainsail, Klipper, Nginx, systemd and udev templates and a fail-closed recovery script.
 - **Connection-check-only printer profile:** `install/printer/first-boot.cfg.in`, which contains neither steppers, heaters, probe nor display. This is untested on new hardware and must not be used to print or calibrate.
 - **Measured-values renderer:** `install/render-printer-config.py`, which refuses to stage a complete config without all nine explicit target-unit measurements and confirmation.
+- **Offline package assembler:** `install/assemble-offline.py` combines the rendered host and printer staging trees into an unused scratch directory with a SHA256 manifest. It cannot deploy anything and refuses symlinked source files and overwritten destinations.
 - **Read-only conflict planner:** `install/plan-deployment.py`, which reports prospective file locations and rejects pre-existing live installations.
 
 ## Offline staging and tests
@@ -25,6 +26,7 @@ python3 install/plan-deployment.py --user testuser \
 
 python3 install/tests/test-printer-gate.py
 python3 install/tests/test-deployment.py
+python3 install/tests/test-assemble-offline.py
 bash install/tests/test-render.sh
 bash install/tests/test-recovery.sh
 bash install/install.sh --check
