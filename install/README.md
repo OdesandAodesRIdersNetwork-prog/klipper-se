@@ -54,3 +54,9 @@ The new **read-only** fresh-CB1 preflight is `install/preflight-cb1.py`, availab
 ## Remaining before installation can be enabled
 
 The blank-CB1 software acquisition/installation script, supervised intermediate calibration pathway to acquire the nine values, safe permissions and conflict-controlled deployment, required service checks, SD-card flash and physical 17-test acceptance are not yet complete. The stage-only tools must not be interpreted as an approved printer setup. Historical Kalico recovery is not a first-install dependency.
+
+## Stage 7: conflict-safe host transaction sandbox
+
+`install/transaction-sandbox.py` adds a marked scratch-root transaction rehearsal after the existing 18-file payload verification. It plans the exact allowlisted destinations, refuses any existing files or symlinked parents, and rolls back only files and directories created by a failed rehearsal. Unrelated scratch-root files and the root marker remain untouched. It refuses real user homes and system roots. Run `python3 install/tests/test-transaction-sandbox.py` for local unit fixtures; see `docs/V3SE_STAGE7_SANDBOX_TRANSACTION.md` for the full safe workflow.
+
+**This is not a privileged installer.** It still never executes apt/pip, starts services, flashes firmware or acquires target calibration. The `--apply` refusal (exit 3) and offline `--check` expected exit 4 remain unchanged.
