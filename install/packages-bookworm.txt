@@ -1,0 +1,19 @@
+# Explicit top-level Debian 12 / Armbian Bookworm candidate packages.
+# Installation is not invoked by the current scaffold.
+ca-certificates
+git
+python3-virtualenv
+python3-dev
+libffi-dev
+build-essential
+gcc-arm-none-eabi
+binutils-arm-none-eabi
+libnewlib-arm-none-eabi
+libopenjp2-7
+libsodium-dev
+zlib1g-dev
+libjpeg-dev
+packagekit
+wireless-tools
+curl
+nginx
